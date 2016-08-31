@@ -1,0 +1,5 @@
+<resources>
+    <string name="empty_message">暂无内容</string>
+    <string name="error_message">Sorry，车主君开小差了</string>
+    <string name="reload">重新加载</string>
+</resources>
