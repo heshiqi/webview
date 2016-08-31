@@ -4,6 +4,7 @@ import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.net.http.SslError;
 import android.os.Build;
+import android.util.Log;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -26,13 +27,12 @@ public class MyWebViewClient extends WebViewClient {
 
     private AHWebView webView;
 
-    protected boolean isLoadSuccess;//标记是否加载成功
+
 
     public MyWebViewClient(WebViewClient webViewClient,AHWebView webView, WebViewListener listener) {
         this.webViewClient = webViewClient;
         this.webView=webView;
         this.listener = listener;
-        this.isLoadSuccess = true;
     }
 
     @TargetApi(Build.VERSION_CODES.M)
@@ -45,10 +45,11 @@ public class MyWebViewClient extends WebViewClient {
     @SuppressWarnings("deprecation")
     @Override
     public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-        isLoadSuccess = false;
+        webView.setLoadError(true);
         if (webViewClient != null) {
             webViewClient.onReceivedError(view, errorCode, description, failingUrl);
         }
+        Log.d("hh","onReceivedError");
         super.onReceivedError(view, errorCode, description, failingUrl);
     }
 
@@ -72,8 +73,7 @@ public class MyWebViewClient extends WebViewClient {
 
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
-        isLoadSuccess = true;
-        if (!webView.isShowProgressBar()) {
+        if (webView.isShowErrorLayout()) {
             webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_LOADING);
         }
         if (listener != null) {
@@ -82,28 +82,33 @@ public class MyWebViewClient extends WebViewClient {
         if (webViewClient != null) {
             webViewClient.onPageStarted(view, url, favicon);
         }
+        Log.d("hh","onPageStarted");
     }
 
 
     @Override
     public void onPageFinished(WebView view, String url) {
-        if (!webView.isShowProgressBar()) {
-            if (isLoadSuccess) {
-                webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_HIDE);
-            } else {
+//        if (webView.isShowErrorLayout()) {
+            if (webView.isLoadError()) {
                 webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_NETWORK_ERROR);
+
+            } else {
+                webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_HIDE);
             }
-        }
+//        }
         if (listener != null) {
             listener.onPageFinished(url);
         }
         if (webViewClient != null) {
             webViewClient.onPageFinished(view, url);
         }
+
+        Log.d("hh","onPageFinished");
     }
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
+        Log.d("hh","shouldOverrideUrlLoading");
         boolean resutl = true;
         if (webViewClient != null) {
             resutl = webViewClient.shouldOverrideUrlLoading(view, url);
@@ -127,6 +132,7 @@ public class MyWebViewClient extends WebViewClient {
         if (webViewClient != null) {
             webViewClient.onLoadResource(view, url);
         }
+        Log.d("hh","onLoadResource");
     }
 
     @TargetApi(Build.VERSION_CODES.M)

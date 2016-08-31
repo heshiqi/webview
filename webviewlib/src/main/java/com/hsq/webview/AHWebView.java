@@ -8,7 +8,6 @@ import android.graphics.PorterDuff;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
-import android.support.annotation.ColorInt;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
@@ -41,7 +40,7 @@ public class AHWebView extends FrameLayout {
     private WebView webView;
     private AHErrorLayout errorLayout;//加载状态布局
     private float density = 1;
-    protected boolean showErrorLayout;
+    private boolean isLoadError;//标记是否加载成功
 
     private int PROGRESSBAR_DEFAULT_COLOR = Color.parseColor("#cc0000");
 
@@ -81,23 +80,26 @@ public class AHWebView extends FrameLayout {
         webView = new WebView(context);
         contentLayout.addView(webView, getLinearLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
 
-        progressBar = new ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal);
-        progressBar.setIndeterminate(false);
-        progressBar.setIndeterminateDrawable(ContextCompat.getDrawable(context, R.drawable.progress_drawable));
-        progressBar.setMax(MAX_PROGRESS);
-        addView(progressBar, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 2));
 
         //添加加载状态布局
         errorLayout = new AHErrorLayout(context);
         errorLayout.setOnLayoutClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
+                if(showErrorLayout){
+
+                }
                 reload();
+                setLoadError(false);
             }
         });
         addView(errorLayout, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
-
+        progressBar = new ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setIndeterminate(false);
+        progressBar.setIndeterminateDrawable(ContextCompat.getDrawable(context, R.drawable.progress_drawable));
+        progressBar.setMax(MAX_PROGRESS);
+        addView(progressBar, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 2));
     }
 
 
@@ -128,6 +130,7 @@ public class AHWebView extends FrameLayout {
         webViewClient = builder.webViewClient;
         webChromeClient = builder.webChromeClient;
         showProgressBar = builder.showProgressBar != null ? builder.showProgressBar : true;
+        showErrorLayout = builder.showErrorLayout != null ? builder.showErrorLayout : false;
         progressBarColor = builder.progressBarColor != null ? builder.progressBarColor : PROGRESSBAR_DEFAULT_COLOR;
         progressBarHeight = builder.progressBarHeight != null ? getSize(builder.progressBarHeight) : getSize(1);
 
@@ -185,7 +188,7 @@ public class AHWebView extends FrameLayout {
      * 初始化WebView配置
      */
     private void initializeWebViewConfig() {
-        webView.setWebChromeClient(new MyWebChromeClient(webChromeClient, progressBar, webViewListener));
+        webView.setWebChromeClient(new MyWebChromeClient(webChromeClient, this, webViewListener));
         webView.setWebViewClient(new MyWebViewClient(webViewClient, this, webViewListener));
         webView.setDownloadListener(downloadListener);
 
@@ -329,13 +332,18 @@ public class AHWebView extends FrameLayout {
     private void initializeProgressBar() {
         progressBar.setVisibility(showProgressBar ? View.VISIBLE : View.GONE);
         if (showProgressBar) {
+            progressBar.getProgressDrawable().setColorFilter(progressBarColor, PorterDuff.Mode.SRC_IN);
+            progressBar.setMinimumHeight(progressBarHeight);
             progressBar.setVisibility(VISIBLE);
-            errorLayout.setErrorType(AHErrorLayout.TYPE_HIDE);
         } else {
             progressBar.setVisibility(INVISIBLE);
         }
-        progressBar.getProgressDrawable().setColorFilter(progressBarColor, PorterDuff.Mode.SRC_IN);
-        progressBar.setMinimumHeight(progressBarHeight);
+
+        if(showErrorLayout){
+            errorLayout.setErrorType(AHErrorLayout.TYPE_LOADING);
+        }else{
+            errorLayout.setErrorType(AHErrorLayout.TYPE_HIDE);
+        }
     }
 
     public void loadData(String data, String mimeType, String encoding) {
@@ -366,6 +374,14 @@ public class AHWebView extends FrameLayout {
         return showProgressBar;
     }
 
+    public boolean isShowErrorLayout() {
+        return showErrorLayout;
+    }
+
+    public ProgressBar getProgressBar(){
+        return  progressBar;
+    }
+
     public AHErrorLayout getErrorLayout() {
         return errorLayout;
     }
@@ -392,6 +408,14 @@ public class AHWebView extends FrameLayout {
 
     public WebView getWebView() {
         return webView;
+    }
+
+    public boolean isLoadError() {
+        return isLoadError;
+    }
+
+    public void setLoadError(boolean loadError) {
+        isLoadError = loadError;
     }
 
     private FrameLayout.LayoutParams getFrameLayoutParams(int width, int height) {
@@ -474,6 +498,7 @@ public class AHWebView extends FrameLayout {
     protected WebChromeClient webChromeClient;
     protected WebViewListener webViewListener;
     protected Boolean showProgressBar;
+    protected Boolean showErrorLayout;
     protected Integer progressBarColor;
     protected int progressBarHeight;
     protected Boolean webViewSupportZoom;
@@ -529,6 +554,12 @@ public class AHWebView extends FrameLayout {
          * 是否显示加载进度条
          */
         protected Boolean showProgressBar;
+
+        /**
+         * 是否显示加载进度条
+         */
+        protected Boolean showErrorLayout;
+
         /**
          * 加载进度条的颜色
          */
@@ -776,7 +807,12 @@ public class AHWebView extends FrameLayout {
             return this;
         }
 
-        public Builder progressBarColor(@ColorInt int color) {
+        public Builder showErrorLayout(boolean showErrorLayout) {
+            this.showErrorLayout = showErrorLayout;
+            return this;
+        }
+
+        public Builder progressBarColor( int color) {
             this.progressBarColor = color;
             return this;
         }

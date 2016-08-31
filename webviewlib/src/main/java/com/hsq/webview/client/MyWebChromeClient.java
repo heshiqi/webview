@@ -13,27 +13,29 @@ import com.hsq.webview.listener.WebViewListener;
  */
 public class MyWebChromeClient extends WebChromeClient {
 
-    private ProgressBar progressBar;
     private WebViewListener listener;
-
     private WebChromeClient webChromeClient;
+    private AHWebView webView;
 
-    public MyWebChromeClient(WebChromeClient webChromeClient, ProgressBar progressBar,WebViewListener listener) {
+    public MyWebChromeClient(WebChromeClient webChromeClient, AHWebView webView, WebViewListener listener) {
         this.webChromeClient = webChromeClient;
-        this.progressBar=progressBar;
+        this.webView = webView;
         this.listener = listener;
     }
 
     @Override
     public void onProgressChanged(WebView view, int progress) {
 
-        if (progress == AHWebView.MAX_PROGRESS) {
-            progress = 0;
-            progressBar.setVisibility(View.INVISIBLE);
-        } else {
-            progressBar.setVisibility(View.VISIBLE);
+        ProgressBar progressBar = webView.getProgressBar();
+        if (progressBar != null&&webView.isShowProgressBar()) {
+            if (progress == AHWebView.MAX_PROGRESS) {
+                progress = 0;
+                progressBar.setVisibility(View.INVISIBLE);
+            } else {
+                progressBar.setVisibility(View.VISIBLE);
+            }
+            progressBar.setProgress(progress);
         }
-        progressBar.setProgress(progress);
         if (listener != null) {
             listener.onProgressChanged(progress);
         }

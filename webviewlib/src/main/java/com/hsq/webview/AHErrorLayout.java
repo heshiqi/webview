@@ -63,8 +63,8 @@ public class AHErrorLayout extends LinearLayout {
 			@Override
 			public void onClick(View v) {
 				if (listener != null){
-					setErrorType(TYPE_LOADING);
 					listener.onClick(v);
+					setErrorType(AHErrorLayout.TYPE_LOADING);
 				}
 			}
 		});
