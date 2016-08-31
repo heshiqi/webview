@@ -44,32 +44,31 @@ import java.util.Map;
  */
 public class AHWebView extends FrameLayout {
 
-    protected static final int REQUEST_CODE_FILE_PICKER = 123456;
-    public static final int MAX_PROGRESS = 100;//加载进度条最大值
+    protected static final int REQUEST_CODE_FILE_PICKER = 123456;//默认选择文件请求码
+    protected static final int MAX_PROGRESS = 100;//加载进度条最大值
+    protected float density = 1;
 
-    private LinearLayout contentLayout;//webview的父布局
-    private ProgressBar progressBar;
-    private WebView webView;
-    private AHErrorLayout errorLayout;//加载状态布局
-    private float density = 1;
+    protected LinearLayout contentLayout;//webview的父布局
+    protected ProgressBar progressBar;//加载进度条
+    protected WebView webView;
+    protected AHErrorLayout errorLayout;//加载状态布局
 
-    private int PROGRESSBAR_DEFAULT_COLOR = Color.parseColor("#cc0000");
 
-    protected int mRequestCodeFilePicker = REQUEST_CODE_FILE_PICKER;
+    protected int PROGRESSBAR_DEFAULT_COLOR = Color.parseColor("#cc0000");//加载进度条的默认颜色
 
-    private CustomWebListener customWebListener;
+    protected int mRequestCodeFilePicker = REQUEST_CODE_FILE_PICKER;//webview 掉起设备选择文件的请求码
+
+    protected CustomWebListener customWebListener;//监听webview的加载状态回调
     protected WeakReference<Activity> mActivity;
     protected WeakReference<Fragment> mFragment;
-    /** File upload callback for platform versions prior to Android 5.0 */
-    protected ValueCallback<Uri> mFileUploadCallbackFirst;
-    /** File upload callback for Android 5.0+ */
-    protected ValueCallback<Uri[]> mFileUploadCallbackSecond;
-    protected final Map<String, String> mHttpHeaders = new HashMap<String, String>();
-    protected String mUploadableFileTypes = "*/*";
-    protected String mimeType;
-    protected String encoding;
-    protected String data;
-    protected String url;
+    protected ValueCallback<Uri> mFileUploadCallbackFirst;//Android 5.0之前的文件上传回调
+    protected ValueCallback<Uri[]> mFileUploadCallbackSecond;//Android 5.0之后的文件上传回调
+    protected final Map<String, String> mHttpHeaders = new HashMap<String, String>();//加载url时 添加的请求头
+    protected String mUploadableFileTypes = "*/*";//上传文件的 类型
+    protected String mimeType;//加载内容的 类型
+    protected String encoding;//加载内容的 字符编码
+    protected String data;//加载的数据源
+    protected String url;//加载的ur
 
     public AHWebView(Context context) {
         this(context, null);
@@ -81,58 +80,93 @@ public class AHWebView extends FrameLayout {
 
     public AHWebView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context, attrs);
+        initView(context, attrs);
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     public AHWebView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
-        init(context, attrs);
+        initView(context, attrs);
     }
 
-    public void attachActivity(Activity activity){
+    /**
+     * 设置activity的引用
+     *
+     * @param activity
+     */
+    public void attachActivity(Activity activity) {
         mActivity = new WeakReference<Activity>(activity);
     }
 
-    public void attachFragment(Fragment fragment){
-        mFragment=new WeakReference<Fragment>(fragment);
+    /**
+     * 设置fragment的引用
+     *
+     * @param fragment
+     */
+    public void attachFragment(Fragment fragment) {
+        mFragment = new WeakReference<Fragment>(fragment);
     }
 
-    private void init(Context context, AttributeSet attrs) {
+    /**
+     * 初始化布局
+     *
+     * @param context
+     * @param attrs
+     */
+    private void initView(Context context, AttributeSet attrs) {
 
-        customWebListener=new CustomWebListener();
+        customWebListener = new CustomWebListener();
         density = context.getResources().getDisplayMetrics().density;
 
-        contentLayout = new LinearLayout(context);
-        contentLayout.setOrientation(LinearLayout.VERTICAL);
-        addView(contentLayout, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        {
+            /**
+             * 添加webview的父布局
+             */
+            contentLayout = new LinearLayout(context);
+            contentLayout.setOrientation(LinearLayout.VERTICAL);
+            addView(contentLayout, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
 
-        webView = new WebView(context);
-        contentLayout.addView(webView, getLinearLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        {
+            /**
+             * 添加webview 布局
+             */
+            webView = new WebView(context);
+            contentLayout.addView(webView, getLinearLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT, 1));
+        }
 
+        {
+            //添加加载状态布局
+            errorLayout = new AHErrorLayout(context);
+            errorLayout.setOnLayoutClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    if (showErrorLayout) {
 
-        //添加加载状态布局
-        errorLayout = new AHErrorLayout(context);
-        errorLayout.setOnLayoutClickListener(new OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (showErrorLayout) {
-
+                    }
+                    reload();
                 }
-                reload();
-            }
-        });
-        addView(errorLayout, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+            });
+            addView(errorLayout, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        }
 
-        progressBar = new ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal);
-        progressBar.setIndeterminate(false);
-        progressBar.setIndeterminateDrawable(ContextCompat.getDrawable(context, R.drawable.progress_drawable));
-        progressBar.setMax(MAX_PROGRESS);
-        addView(progressBar, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 2));
+        {
+            //添加加载进度条布局
+            progressBar = new ProgressBar(context, null, android.R.attr.progressBarStyleHorizontal);
+            progressBar.setIndeterminate(false);
+            progressBar.setIndeterminateDrawable(ContextCompat.getDrawable(context, R.drawable.progress_drawable));
+            progressBar.setMax(MAX_PROGRESS);
+            addView(progressBar, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 2));
+        }
     }
 
 
-    private void initWebViewWithBuilder(Builder builder) {
+    /**
+     * 初始化webview配置
+     *
+     * @param builder
+     */
+    private AHWebView initWebViewWithBuilder(Builder builder) {
 
         initializeConfigParams(builder);
 
@@ -145,7 +179,7 @@ public class AHWebView extends FrameLayout {
         } else if (url != null) {
             webView.loadUrl(url);
         }
-
+        return this;
 
     }
 
@@ -158,6 +192,7 @@ public class AHWebView extends FrameLayout {
         webViewListener = builder.listener;
         webViewClient = builder.webViewClient;
         webChromeClient = builder.webChromeClient;
+
         showProgressBar = builder.showProgressBar != null ? builder.showProgressBar : true;
         showErrorLayout = builder.showErrorLayout != null ? builder.showErrorLayout : false;
         progressBarColor = builder.progressBarColor != null ? builder.progressBarColor : PROGRESSBAR_DEFAULT_COLOR;
@@ -204,7 +239,8 @@ public class AHWebView extends FrameLayout {
         webViewCacheMode = builder.webViewCacheMode;
         webViewMixedContentMode = builder.webViewMixedContentMode;
         webViewOffscreenPreRaster = builder.webViewOffscreenPreRaster;
-
+        thirdPartyCookiesEnabled = builder.thirdPartyCookiesEnabled != null ? builder.thirdPartyCookiesEnabled : true;
+        cookiesEnabled = builder.cookiesEnabled;
         injectJavaScript = builder.injectJavaScript;
 
         mimeType = builder.mimeType;
@@ -214,16 +250,15 @@ public class AHWebView extends FrameLayout {
     }
 
     /**
-     * 初始化WebView配置
+     * 设置WebView的配置参数
      */
     private void initializeWebViewConfig() {
-        webView.setWebChromeClient(new MyWebChromeClient(webChromeClient,this , customWebListener));
+        webView.setWebChromeClient(new MyWebChromeClient(webChromeClient, this, customWebListener));
         webView.setWebViewClient(new MyWebViewClient(webViewClient, this, customWebListener));
         webView.setDownloadListener(downloadListener);
         webView.setFocusable(true);
         webView.setFocusableInTouchMode(true);
         webView.setSaveEnabled(true);
-        setThirdPartyCookiesEnabled(true);
 
         WebSettings settings = webView.getSettings();
 
@@ -355,6 +390,14 @@ public class AHWebView extends FrameLayout {
             settings.setOffscreenPreRaster(webViewOffscreenPreRaster);
         }
 
+        if (thirdPartyCookiesEnabled != null) {
+            setThirdPartyCookiesEnabled(true);
+        }
+
+        if (cookiesEnabled != null) {
+            setCookiesEnabled(cookiesEnabled);
+        }
+
 //            // Other webview options
 //            webView.setScrollBarStyle(WebView.SCROLLBARS_OUTSIDE_OVERLAY);
 //            webView.setScrollbarFadingEnabled(false);
@@ -366,6 +409,9 @@ public class AHWebView extends FrameLayout {
 //            webView.setVerticalFadingEdgeEnabled(false);
     }
 
+    /**
+     * 初始化进度条数据
+     */
     private void initializeProgressBar() {
         progressBar.setVisibility(showProgressBar ? View.VISIBLE : View.GONE);
         if (showProgressBar) {
@@ -399,8 +445,7 @@ public class AHWebView extends FrameLayout {
         this.url = url;
         if (mHttpHeaders.size() > 0) {
             webView.loadUrl(url, mHttpHeaders);
-        }
-        else {
+        } else {
             webView.loadUrl(url);
         }
     }
@@ -408,8 +453,7 @@ public class AHWebView extends FrameLayout {
     public void loadUrl(final String url, Map<String, String> additionalHttpHeaders) {
         if (additionalHttpHeaders == null) {
             additionalHttpHeaders = mHttpHeaders;
-        }
-        else if (mHttpHeaders.size() > 0) {
+        } else if (mHttpHeaders.size() > 0) {
             additionalHttpHeaders.putAll(mHttpHeaders);
         }
 
@@ -435,10 +479,20 @@ public class AHWebView extends FrameLayout {
     }
 
 
+    /**
+     * 设置上传文件的类型
+     * @param mimeType
+     */
     public void setUploadableFileTypes(final String mimeType) {
         mUploadableFileTypes = mimeType;
     }
 
+    /**
+     * 选取文件返回处理
+     * @param requestCode
+     * @param resultCode
+     * @param intent
+     */
     public void onActivityResult(final int requestCode, final int resultCode, final Intent intent) {
         if (requestCode == mRequestCodeFilePicker) {
             if (resultCode == Activity.RESULT_OK) {
@@ -446,15 +500,13 @@ public class AHWebView extends FrameLayout {
                     if (mFileUploadCallbackFirst != null) {
                         mFileUploadCallbackFirst.onReceiveValue(intent.getData());
                         mFileUploadCallbackFirst = null;
-                    }
-                    else if (mFileUploadCallbackSecond != null) {
+                    } else if (mFileUploadCallbackSecond != null) {
                         Uri[] dataUris = null;
 
                         try {
                             if (intent.getDataString() != null) {
-                                dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
-                            }
-                            else {
+                                dataUris = new Uri[]{Uri.parse(intent.getDataString())};
+                            } else {
                                 if (Build.VERSION.SDK_INT >= 16) {
                                     if (intent.getClipData() != null) {
                                         final int numSelectedFiles = intent.getClipData().getItemCount();
@@ -467,20 +519,18 @@ public class AHWebView extends FrameLayout {
                                     }
                                 }
                             }
+                        } catch (Exception ignored) {
                         }
-                        catch (Exception ignored) { }
 
                         mFileUploadCallbackSecond.onReceiveValue(dataUris);
                         mFileUploadCallbackSecond = null;
                     }
                 }
-            }
-            else {
+            } else {
                 if (mFileUploadCallbackFirst != null) {
                     mFileUploadCallbackFirst.onReceiveValue(null);
                     mFileUploadCallbackFirst = null;
-                }
-                else if (mFileUploadCallbackSecond != null) {
+                } else if (mFileUploadCallbackSecond != null) {
                     mFileUploadCallbackSecond.onReceiveValue(null);
                     mFileUploadCallbackSecond = null;
                 }
@@ -488,12 +538,15 @@ public class AHWebView extends FrameLayout {
         }
     }
 
+    /**
+     * 回退键处理
+     * @return
+     */
     public boolean onBackPressed() {
         if (canGoBack()) {
             goBack();
             return false;
-        }
-        else {
+        } else {
             return true;
         }
     }
@@ -511,15 +564,15 @@ public class AHWebView extends FrameLayout {
     }
 
     /**
-     * Adds an additional HTTP header that will be sent along with every HTTP `GET` request
-     *
+     * 每次请求附加的HTTP 头
+     * <p/>
      * This does only affect the main requests, not the requests to included resources (e.g. images)
-     *
+     * <p/>
      * If you later want to delete an HTTP header that was previously added this way, call `removeHttpHeader()`
-     *
+     * <p/>
      * The `WebView` implementation may in some cases overwrite headers that you set or unset
      *
-     * @param name the name of the HTTP header to add
+     * @param name  the name of the HTTP header to add
      * @param value the value of the HTTP header to send
      */
     public void addHttpHeader(final String name, final String value) {
@@ -528,9 +581,9 @@ public class AHWebView extends FrameLayout {
 
     /**
      * Removes one of the HTTP headers that have previously been added via `addHttpHeader()`
-     *
+     * <p/>
      * If you want to unset a pre-defined header, set it to an empty string with `addHttpHeader()` instead
-     *
+     * <p/>
      * The `WebView` implementation may in some cases overwrite headers that you set or unset
      *
      * @param name the name of the HTTP header to remove
@@ -539,21 +592,11 @@ public class AHWebView extends FrameLayout {
         mHttpHeaders.remove(name);
     }
 
+    /**
+     * 刷新当前界面
+     */
     public void reload() {
         webView.reload();
-    }
-
-    public void setUrl(String url) {
-        this.url = url;
-    }
-
-    public boolean isShowErrorLayout() {
-        return showErrorLayout;
-    }
-
-
-    public AHErrorLayout getErrorLayout() {
-        return errorLayout;
     }
 
     public WebSettings getSettings() {
@@ -582,7 +625,7 @@ public class AHWebView extends FrameLayout {
 
 
     public boolean isWebViewGeolocationEnabled() {
-        return webViewGeolocationEnabled==null?false:true;
+        return webViewGeolocationEnabled == null ? false : true;
     }
 
     private LayoutParams getFrameLayoutParams(int width, int height) {
@@ -721,13 +764,17 @@ public class AHWebView extends FrameLayout {
     protected Integer webViewCacheMode;
     protected Integer webViewMixedContentMode;
     protected Boolean webViewOffscreenPreRaster;
+    protected Boolean thirdPartyCookiesEnabled;
+    protected Boolean cookiesEnabled;
+    ;
     protected String injectJavaScript;
 
 
     /**
      * 加载url
+     *
      * @param url
-     * @param preventCaching  是否缓存内容
+     * @param preventCaching 是否缓存内容
      */
     public void loadUrl(String url, final boolean preventCaching) {
         if (preventCaching) {
@@ -739,11 +786,12 @@ public class AHWebView extends FrameLayout {
 
     /**
      * 加载url
+     *
      * @param url
-     * @param preventCaching  是否缓存内容
-     * @param additionalHttpHeaders  所添加的headers
+     * @param preventCaching        是否缓存内容
+     * @param additionalHttpHeaders 所添加的headers
      */
-    public void loadUrl(String url, final boolean preventCaching, final Map<String,String> additionalHttpHeaders) {
+    public void loadUrl(String url, final boolean preventCaching, final Map<String, String> additionalHttpHeaders) {
         if (preventCaching) {
             url = Utils.makeUrlUnique(url);
         }
@@ -752,10 +800,10 @@ public class AHWebView extends FrameLayout {
     }
 
 
-    public class CustomWebListener extends WebViewListener{
+    public class CustomWebListener extends WebViewListener {
         @Override
         public void onProgressChanged(int progress) {
-            if (progressBar != null&&showProgressBar) {
+            if (progressBar != null && showProgressBar) {
                 if (progress == AHWebView.MAX_PROGRESS) {
                     progress = 0;
                     progressBar.setVisibility(View.INVISIBLE);
@@ -764,39 +812,61 @@ public class AHWebView extends FrameLayout {
                 }
                 progressBar.setProgress(progress);
             }
-            if(webViewListener!=null){
+            if (webViewListener != null) {
                 webViewListener.onProgressChanged(progress);
             }
         }
 
         @Override
         public void onReceivedTitle(String title) {
-            if(webViewListener!=null){
+            if (webViewListener != null) {
                 webViewListener.onReceivedTitle(title);
             }
         }
 
         @Override
         public void onReceivedTouchIconUrl(String url, boolean precomposed) {
-            if(webViewListener!=null){
-                webViewListener.onReceivedTouchIconUrl(url,precomposed);
+            if (webViewListener != null) {
+                webViewListener.onReceivedTouchIconUrl(url, precomposed);
             }
         }
 
         @Override
+        public void onPageStarted(String url, boolean hasError) {
+
+            if (!hasError) {
+                if (showErrorLayout) {
+                    errorLayout.setErrorType(AHErrorLayout.TYPE_LOADING);
+                }
+            }
+        }
+
+        @Override
+        public void onPageFinished(String url, boolean hasError) {
+            if (hasError) {
+                errorLayout.setErrorType(AHErrorLayout.TYPE_NETWORK_ERROR);
+
+            }else{
+                errorLayout.setErrorType(AHErrorLayout.TYPE_HIDE);
+            }
+
+        }
+
+        @Override
         public void openFileInput(ValueCallback<Uri> fileUploadCallbackFirst, ValueCallback<Uri[]> fileUploadCallbackSecond, boolean allowMultiple) {
-            if(webViewListener!=null){
-                webViewListener.openFileInput(fileUploadCallbackFirst,fileUploadCallbackSecond,allowMultiple);
+            if (webViewListener != null) {
+                webViewListener.openFileInput(fileUploadCallbackFirst, fileUploadCallbackSecond, allowMultiple);
             }
         }
 
         @Override
         public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
-            if(webViewListener!=null){
-                webViewListener.onDownloadStart(url,userAgent,contentDisposition,mimeType,contentLength);
+            if (webViewListener != null) {
+                webViewListener.onDownloadStart(url, userAgent, contentDisposition, mimeType, contentLength);
             }
         }
     }
+
     @SuppressLint("NewApi")
     protected void openFileInput(final ValueCallback<Uri> fileUploadCallbackFirst, final ValueCallback<Uri[]> fileUploadCallbackSecond, final boolean allowMultiple) {
         if (mFileUploadCallbackFirst != null) {
@@ -822,8 +892,7 @@ public class AHWebView extends FrameLayout {
 
         if (mFragment != null && mFragment.get() != null && Build.VERSION.SDK_INT >= 11) {
             mFragment.get().startActivityForResult(Intent.createChooser(i, Utils.getFileUploadPromptLabel()), mRequestCodeFilePicker);
-        }
-        else if (mActivity != null && mActivity.get() != null) {
+        } else if (mActivity != null && mActivity.get() != null) {
             mActivity.get().startActivityForResult(Intent.createChooser(i, Utils.getFileUploadPromptLabel()), mRequestCodeFilePicker);
         }
     }
@@ -1064,6 +1133,9 @@ public class AHWebView extends FrameLayout {
          * 3、在可见的WebView和即将显现的WebView上使用；
          */
         protected Boolean webViewOffscreenPreRaster;
+
+        protected Boolean thirdPartyCookiesEnabled;
+        protected Boolean cookiesEnabled;
 
         protected String injectJavaScript;
 
@@ -1328,6 +1400,16 @@ public class AHWebView extends FrameLayout {
             return this;
         }
 
+        public Builder thirdPartyCookiesEnabled(boolean thirdPartyCookiesEnabled) {
+            this.thirdPartyCookiesEnabled = thirdPartyCookiesEnabled;
+            return this;
+        }
+
+        public Builder cookiesEnabled(boolean cookiesEnabled) {
+            this.cookiesEnabled = cookiesEnabled;
+            return this;
+        }
+
         /**
          * webview 加载数据时{@link #data} 的数据mimeType
          *
@@ -1372,8 +1454,8 @@ public class AHWebView extends FrameLayout {
             return this;
         }
 
-        public void builder(AHWebView webView){
-            webView.initWebViewWithBuilder(this);
+        public AHWebView builder(AHWebView webView) {
+            return webView.initWebViewWithBuilder(this);
         }
     }
 

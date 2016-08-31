@@ -16,7 +16,6 @@ import android.webkit.WebResourceResponse;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-import com.hsq.webview.AHErrorLayout;
 import com.hsq.webview.AHWebView;
 import com.hsq.webview.listener.WebViewListener;
 
@@ -86,10 +85,8 @@ public class MyWebViewClient extends WebViewClient {
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
 
-        if (!hasError()) {
-            if (webView.isShowErrorLayout()) {
-                webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_LOADING);
-            }
+        if(listener!=null){
+            listener.onPageStarted(url,hasError());
         }
         if (webViewClient != null) {
             webViewClient.onPageStarted(view, url, favicon);
@@ -100,12 +97,9 @@ public class MyWebViewClient extends WebViewClient {
     @Override
     public void onPageFinished(WebView view, String url) {
 
-        if (!hasError()) {
-            webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_HIDE);
-        }else{
-            webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_NETWORK_ERROR);
+        if(listener!=null){
+            listener.onPageFinished(url,hasError());
         }
-
         if (webViewClient != null) {
             webViewClient.onPageFinished(view, url);
         }
@@ -121,7 +115,6 @@ public class MyWebViewClient extends WebViewClient {
                 return true;
             }
         }
-        webView.setUrl(url);
         view.loadUrl(url);
         return true;
     }
