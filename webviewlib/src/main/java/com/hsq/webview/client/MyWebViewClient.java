@@ -1,10 +1,14 @@
 package com.hsq.webview.client;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.graphics.Bitmap;
 import android.net.http.SslError;
 import android.os.Build;
-import android.util.Log;
+import android.os.Message;
+import android.view.KeyEvent;
+import android.webkit.ClientCertRequest;
+import android.webkit.HttpAuthHandler;
 import android.webkit.SslErrorHandler;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -15,6 +19,7 @@ import android.webkit.WebViewClient;
 import com.hsq.webview.AHErrorLayout;
 import com.hsq.webview.AHWebView;
 import com.hsq.webview.listener.WebViewListener;
+
 
 /**
  * Created by heshiqi on 16/8/30.
@@ -35,21 +40,28 @@ public class MyWebViewClient extends WebViewClient {
         this.listener = listener;
     }
 
+    protected long mLastError;
+    protected void setLastError() {
+        mLastError = System.currentTimeMillis();
+    }
+
+    protected boolean hasError() {
+        return (mLastError + 500) >= System.currentTimeMillis();
+    }
+
     @TargetApi(Build.VERSION_CODES.M)
     @Override
     public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
         onReceivedError(view, error.getErrorCode(), error.getDescription().toString(), request.getUrl().toString());
-        super.onReceivedError(view, request, error);
     }
 
     @SuppressWarnings("deprecation")
     @Override
     public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-        webView.setLoadError(true);
+        setLastError();
         if (webViewClient != null) {
             webViewClient.onReceivedError(view, errorCode, description, failingUrl);
         }
-        Log.d("hh","onReceivedError");
         super.onReceivedError(view, errorCode, description, failingUrl);
     }
 
@@ -73,49 +85,45 @@ public class MyWebViewClient extends WebViewClient {
 
     @Override
     public void onPageStarted(WebView view, String url, Bitmap favicon) {
-        if (webView.isShowErrorLayout()) {
-            webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_LOADING);
-        }
-        if (listener != null) {
-            listener.onPageStarted(url);
+
+        if (!hasError()) {
+            if (webView.isShowErrorLayout()) {
+                webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_LOADING);
+            }
         }
         if (webViewClient != null) {
             webViewClient.onPageStarted(view, url, favicon);
         }
-        Log.d("hh","onPageStarted");
     }
 
 
     @Override
     public void onPageFinished(WebView view, String url) {
-//        if (webView.isShowErrorLayout()) {
-            if (webView.isLoadError()) {
-                webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_NETWORK_ERROR);
 
-            } else {
-                webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_HIDE);
-            }
-//        }
-        if (listener != null) {
-            listener.onPageFinished(url);
+        if (!hasError()) {
+            webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_HIDE);
+        }else{
+            webView.getErrorLayout().setErrorType(AHErrorLayout.TYPE_NETWORK_ERROR);
         }
+
         if (webViewClient != null) {
             webViewClient.onPageFinished(view, url);
         }
-
-        Log.d("hh","onPageFinished");
     }
 
     @Override
     public boolean shouldOverrideUrlLoading(WebView view, String url) {
-        Log.d("hh","shouldOverrideUrlLoading");
-        boolean resutl = true;
+
         if (webViewClient != null) {
-            resutl = webViewClient.shouldOverrideUrlLoading(view, url);
+            // if the user-specified handler asks to override the request
+            if (webViewClient.shouldOverrideUrlLoading(view, url)) {
+                // cancel the original request
+                return true;
+            }
         }
         webView.setUrl(url);
         view.loadUrl(url);
-        return resutl;
+        return true;
     }
 
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -126,21 +134,147 @@ public class MyWebViewClient extends WebViewClient {
 
     @Override
     public void onLoadResource(WebView view, String url) {
-        if (listener != null) {
-            listener.onLoadResource(url);
-        }
+
         if (webViewClient != null) {
             webViewClient.onLoadResource(view, url);
         }
-        Log.d("hh","onLoadResource");
+    }
+
+    @SuppressLint("NewApi")
+    @SuppressWarnings("all")
+    public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
+        if (Build.VERSION.SDK_INT >= 11) {
+            if (webViewClient != null) {
+                return webViewClient.shouldInterceptRequest(view, url);
+            }
+            else {
+                return super.shouldInterceptRequest(view, url);
+            }
+        }
+        else {
+            return null;
+        }
+    }
+
+    @SuppressLint("NewApi")
+    @SuppressWarnings("all")
+    public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            if (webViewClient != null) {
+                return webViewClient.shouldInterceptRequest(view, request);
+            }
+            else {
+                return super.shouldInterceptRequest(view, request);
+            }
+        }
+        else {
+            return null;
+        }
+    }
+
+    @Override
+    public void onFormResubmission(WebView view, Message dontResend, Message resend) {
+        if (webViewClient != null) {
+            webViewClient.onFormResubmission(view, dontResend, resend);
+        }
+        else {
+            super.onFormResubmission(view, dontResend, resend);
+        }
+    }
+
+    @Override
+    public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+        if (webViewClient != null) {
+            webViewClient.doUpdateVisitedHistory(view, url, isReload);
+        }
+        else {
+            super.doUpdateVisitedHistory(view, url, isReload);
+        }
+    }
+
+    @SuppressLint("NewApi")
+    @SuppressWarnings("all")
+    public void onReceivedClientCertRequest(WebView view, ClientCertRequest request) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            if (webViewClient != null) {
+                webViewClient.onReceivedClientCertRequest(view, request);
+            }
+            else {
+                super.onReceivedClientCertRequest(view, request);
+            }
+        }
+    }
+
+    @Override
+    public void onReceivedHttpAuthRequest(WebView view, HttpAuthHandler handler, String host, String realm) {
+        if (webViewClient != null) {
+            webViewClient.onReceivedHttpAuthRequest(view, handler, host, realm);
+        }
+        else {
+            super.onReceivedHttpAuthRequest(view, handler, host, realm);
+        }
+    }
+
+
+    @Override
+    public boolean shouldOverrideKeyEvent(WebView view, KeyEvent event) {
+        if (webViewClient != null) {
+            return webViewClient.shouldOverrideKeyEvent(view, event);
+        }
+        else {
+            return super.shouldOverrideKeyEvent(view, event);
+        }
+    }
+
+    @Override
+    public void onUnhandledKeyEvent(WebView view, KeyEvent event) {
+        if (webViewClient != null) {
+            webViewClient.onUnhandledKeyEvent(view, event);
+        }
+        else {
+            super.onUnhandledKeyEvent(view, event);
+        }
+    }
+
+//    @SuppressLint("NewApi")
+//    @SuppressWarnings("all")
+//    public void onUnhandledInputEvent(WebView view, InputEvent event) {
+//        if (Build.VERSION.SDK_INT >= 21) {
+//            if (webViewClient != null) {
+//                webViewClient.onUnhandledInputEvent(view, event);
+//            }
+//            else {
+//                super.onUnhandledInputEvent(view, event);
+//            }
+//        }
+//    }
+
+    @Override
+    public void onScaleChanged(WebView view, float oldScale, float newScale) {
+        if (webViewClient != null) {
+            webViewClient.onScaleChanged(view, oldScale, newScale);
+        }
+        else {
+            super.onScaleChanged(view, oldScale, newScale);
+        }
+    }
+
+    @SuppressLint("NewApi")
+    @SuppressWarnings("all")
+    public void onReceivedLoginRequest(WebView view, String realm, String account, String args) {
+        if (Build.VERSION.SDK_INT >= 12) {
+            if (webViewClient != null) {
+                webViewClient.onReceivedLoginRequest(view, realm, account, args);
+            }
+            else {
+                super.onReceivedLoginRequest(view, realm, account, args);
+            }
+        }
     }
 
     @TargetApi(Build.VERSION_CODES.M)
     @Override
     public void onPageCommitVisible(WebView view, String url) {
-        if (listener != null) {
-            listener.onPageCommitVisible(url);
-        }
         if (webViewClient != null) {
             webViewClient.onPageCommitVisible(view, url);
         }

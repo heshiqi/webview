@@ -1,19 +1,26 @@
 package com.hsq.webview;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.webkit.CookieManager;
 import android.webkit.DownloadListener;
+import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -25,14 +32,19 @@ import android.widget.ProgressBar;
 import com.hsq.webview.client.MyWebChromeClient;
 import com.hsq.webview.client.MyWebViewClient;
 import com.hsq.webview.listener.WebViewListener;
+import com.hsq.webview.util.Utils;
 
 import java.io.Serializable;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by heshiqi on 16/8/29.
  */
 public class AHWebView extends FrameLayout {
 
+    protected static final int REQUEST_CODE_FILE_PICKER = 123456;
     public static final int MAX_PROGRESS = 100;//加载进度条最大值
 
     private LinearLayout contentLayout;//webview的父布局
@@ -40,11 +52,20 @@ public class AHWebView extends FrameLayout {
     private WebView webView;
     private AHErrorLayout errorLayout;//加载状态布局
     private float density = 1;
-    private boolean isLoadError;//标记是否加载成功
 
     private int PROGRESSBAR_DEFAULT_COLOR = Color.parseColor("#cc0000");
 
+    protected int mRequestCodeFilePicker = REQUEST_CODE_FILE_PICKER;
 
+    private CustomWebListener customWebListener;
+    protected WeakReference<Activity> mActivity;
+    protected WeakReference<Fragment> mFragment;
+    /** File upload callback for platform versions prior to Android 5.0 */
+    protected ValueCallback<Uri> mFileUploadCallbackFirst;
+    /** File upload callback for Android 5.0+ */
+    protected ValueCallback<Uri[]> mFileUploadCallbackSecond;
+    protected final Map<String, String> mHttpHeaders = new HashMap<String, String>();
+    protected String mUploadableFileTypes = "*/*";
     protected String mimeType;
     protected String encoding;
     protected String data;
@@ -69,8 +90,17 @@ public class AHWebView extends FrameLayout {
         init(context, attrs);
     }
 
+    public void attachActivity(Activity activity){
+        mActivity = new WeakReference<Activity>(activity);
+    }
+
+    public void attachFragment(Fragment fragment){
+        mFragment=new WeakReference<Fragment>(fragment);
+    }
+
     private void init(Context context, AttributeSet attrs) {
 
+        customWebListener=new CustomWebListener();
         density = context.getResources().getDisplayMetrics().density;
 
         contentLayout = new LinearLayout(context);
@@ -86,11 +116,10 @@ public class AHWebView extends FrameLayout {
         errorLayout.setOnLayoutClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
-                if(showErrorLayout){
+                if (showErrorLayout) {
 
                 }
                 reload();
-                setLoadError(false);
             }
         });
         addView(errorLayout, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
@@ -103,7 +132,7 @@ public class AHWebView extends FrameLayout {
     }
 
 
-    public void initWebViewWithBuilder(Builder builder) {
+    private void initWebViewWithBuilder(Builder builder) {
 
         initializeConfigParams(builder);
 
@@ -188,11 +217,19 @@ public class AHWebView extends FrameLayout {
      * 初始化WebView配置
      */
     private void initializeWebViewConfig() {
-        webView.setWebChromeClient(new MyWebChromeClient(webChromeClient, this, webViewListener));
-        webView.setWebViewClient(new MyWebViewClient(webViewClient, this, webViewListener));
+        webView.setWebChromeClient(new MyWebChromeClient(webChromeClient,this , customWebListener));
+        webView.setWebViewClient(new MyWebViewClient(webViewClient, this, customWebListener));
         webView.setDownloadListener(downloadListener);
+        webView.setFocusable(true);
+        webView.setFocusableInTouchMode(true);
+        webView.setSaveEnabled(true);
+        setThirdPartyCookiesEnabled(true);
 
         WebSettings settings = webView.getSettings();
+
+        if (Build.VERSION.SDK_INT < 18) {
+            settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+        }
 
         if (webViewSupportZoom != null) {
             settings.setSupportZoom(webViewSupportZoom);
@@ -339,9 +376,9 @@ public class AHWebView extends FrameLayout {
             progressBar.setVisibility(INVISIBLE);
         }
 
-        if(showErrorLayout){
+        if (showErrorLayout) {
             errorLayout.setErrorType(AHErrorLayout.TYPE_LOADING);
-        }else{
+        } else {
             errorLayout.setErrorType(AHErrorLayout.TYPE_HIDE);
         }
     }
@@ -356,10 +393,150 @@ public class AHWebView extends FrameLayout {
     }
 
     public void loadUrl(String url) {
-        if (url != null) {
-            this.url = url;
+        if (url == null) {
+            return;
+        }
+        this.url = url;
+        if (mHttpHeaders.size() > 0) {
+            webView.loadUrl(url, mHttpHeaders);
+        }
+        else {
             webView.loadUrl(url);
         }
+    }
+
+    public void loadUrl(final String url, Map<String, String> additionalHttpHeaders) {
+        if (additionalHttpHeaders == null) {
+            additionalHttpHeaders = mHttpHeaders;
+        }
+        else if (mHttpHeaders.size() > 0) {
+            additionalHttpHeaders.putAll(mHttpHeaders);
+        }
+
+        webView.loadUrl(url, additionalHttpHeaders);
+    }
+
+    @SuppressLint("NewApi")
+    @SuppressWarnings("all")
+    public void onResume() {
+        if (Build.VERSION.SDK_INT >= 11) {
+            webView.onResume();
+        }
+        webView.resumeTimers();
+    }
+
+    @SuppressLint("NewApi")
+    @SuppressWarnings("all")
+    public void onPause() {
+        webView.pauseTimers();
+        if (Build.VERSION.SDK_INT >= 11) {
+            webView.onPause();
+        }
+    }
+
+
+    public void setUploadableFileTypes(final String mimeType) {
+        mUploadableFileTypes = mimeType;
+    }
+
+    public void onActivityResult(final int requestCode, final int resultCode, final Intent intent) {
+        if (requestCode == mRequestCodeFilePicker) {
+            if (resultCode == Activity.RESULT_OK) {
+                if (intent != null) {
+                    if (mFileUploadCallbackFirst != null) {
+                        mFileUploadCallbackFirst.onReceiveValue(intent.getData());
+                        mFileUploadCallbackFirst = null;
+                    }
+                    else if (mFileUploadCallbackSecond != null) {
+                        Uri[] dataUris = null;
+
+                        try {
+                            if (intent.getDataString() != null) {
+                                dataUris = new Uri[] { Uri.parse(intent.getDataString()) };
+                            }
+                            else {
+                                if (Build.VERSION.SDK_INT >= 16) {
+                                    if (intent.getClipData() != null) {
+                                        final int numSelectedFiles = intent.getClipData().getItemCount();
+
+                                        dataUris = new Uri[numSelectedFiles];
+
+                                        for (int i = 0; i < numSelectedFiles; i++) {
+                                            dataUris[i] = intent.getClipData().getItemAt(i).getUri();
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        catch (Exception ignored) { }
+
+                        mFileUploadCallbackSecond.onReceiveValue(dataUris);
+                        mFileUploadCallbackSecond = null;
+                    }
+                }
+            }
+            else {
+                if (mFileUploadCallbackFirst != null) {
+                    mFileUploadCallbackFirst.onReceiveValue(null);
+                    mFileUploadCallbackFirst = null;
+                }
+                else if (mFileUploadCallbackSecond != null) {
+                    mFileUploadCallbackSecond.onReceiveValue(null);
+                    mFileUploadCallbackSecond = null;
+                }
+            }
+        }
+    }
+
+    public boolean onBackPressed() {
+        if (canGoBack()) {
+            goBack();
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
+
+    @SuppressWarnings("static-method")
+    public void setCookiesEnabled(final boolean enabled) {
+        CookieManager.getInstance().setAcceptCookie(enabled);
+    }
+
+    @SuppressLint("NewApi")
+    public void setThirdPartyCookiesEnabled(final boolean enabled) {
+        if (Build.VERSION.SDK_INT >= 21) {
+            CookieManager.getInstance().setAcceptThirdPartyCookies(webView, enabled);
+        }
+    }
+
+    /**
+     * Adds an additional HTTP header that will be sent along with every HTTP `GET` request
+     *
+     * This does only affect the main requests, not the requests to included resources (e.g. images)
+     *
+     * If you later want to delete an HTTP header that was previously added this way, call `removeHttpHeader()`
+     *
+     * The `WebView` implementation may in some cases overwrite headers that you set or unset
+     *
+     * @param name the name of the HTTP header to add
+     * @param value the value of the HTTP header to send
+     */
+    public void addHttpHeader(final String name, final String value) {
+        mHttpHeaders.put(name, value);
+    }
+
+    /**
+     * Removes one of the HTTP headers that have previously been added via `addHttpHeader()`
+     *
+     * If you want to unset a pre-defined header, set it to an empty string with `addHttpHeader()` instead
+     *
+     * The `WebView` implementation may in some cases overwrite headers that you set or unset
+     *
+     * @param name the name of the HTTP header to remove
+     */
+    public void removeHttpHeader(final String name) {
+        mHttpHeaders.remove(name);
     }
 
     public void reload() {
@@ -370,17 +547,10 @@ public class AHWebView extends FrameLayout {
         this.url = url;
     }
 
-    public boolean isShowProgressBar() {
-        return showProgressBar;
-    }
-
     public boolean isShowErrorLayout() {
         return showErrorLayout;
     }
 
-    public ProgressBar getProgressBar(){
-        return  progressBar;
-    }
 
     public AHErrorLayout getErrorLayout() {
         return errorLayout;
@@ -410,16 +580,13 @@ public class AHWebView extends FrameLayout {
         return webView;
     }
 
-    public boolean isLoadError() {
-        return isLoadError;
+
+    public boolean isWebViewGeolocationEnabled() {
+        return webViewGeolocationEnabled==null?false:true;
     }
 
-    public void setLoadError(boolean loadError) {
-        isLoadError = loadError;
-    }
-
-    private FrameLayout.LayoutParams getFrameLayoutParams(int width, int height) {
-        return new FrameLayout.LayoutParams(getSize(width), getSize(height));
+    private LayoutParams getFrameLayoutParams(int width, int height) {
+        return new LayoutParams(getSize(width), getSize(height));
     }
 
     private LinearLayout.LayoutParams getLinearLayoutParams(int width, int height) {
@@ -487,12 +654,24 @@ public class AHWebView extends FrameLayout {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                if (webView != null) {
+                if (contentLayout != null && webView != null) {
+                    // 移除webview
+                    try {
+                        contentLayout.removeView(webView);
+                    } catch (Exception ignored) {
+                    }
+
+                    // 然后在移除webview中所有的view
+                    try {
+                        webView.removeAllViews();
+                    } catch (Exception ignored) {
+                    }
                     webView.destroy();
                 }
             }
         }, ViewConfiguration.getZoomControlsTimeout() + 1000L);
     }
+
 
     protected WebViewClient webViewClient;
     protected WebChromeClient webChromeClient;
@@ -543,6 +722,112 @@ public class AHWebView extends FrameLayout {
     protected Integer webViewMixedContentMode;
     protected Boolean webViewOffscreenPreRaster;
     protected String injectJavaScript;
+
+
+    /**
+     * 加载url
+     * @param url
+     * @param preventCaching  是否缓存内容
+     */
+    public void loadUrl(String url, final boolean preventCaching) {
+        if (preventCaching) {
+            url = Utils.makeUrlUnique(url);
+        }
+
+        loadUrl(url);
+    }
+
+    /**
+     * 加载url
+     * @param url
+     * @param preventCaching  是否缓存内容
+     * @param additionalHttpHeaders  所添加的headers
+     */
+    public void loadUrl(String url, final boolean preventCaching, final Map<String,String> additionalHttpHeaders) {
+        if (preventCaching) {
+            url = Utils.makeUrlUnique(url);
+        }
+
+        loadUrl(url, additionalHttpHeaders);
+    }
+
+
+    public class CustomWebListener extends WebViewListener{
+        @Override
+        public void onProgressChanged(int progress) {
+            if (progressBar != null&&showProgressBar) {
+                if (progress == AHWebView.MAX_PROGRESS) {
+                    progress = 0;
+                    progressBar.setVisibility(View.INVISIBLE);
+                } else {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+                progressBar.setProgress(progress);
+            }
+            if(webViewListener!=null){
+                webViewListener.onProgressChanged(progress);
+            }
+        }
+
+        @Override
+        public void onReceivedTitle(String title) {
+            if(webViewListener!=null){
+                webViewListener.onReceivedTitle(title);
+            }
+        }
+
+        @Override
+        public void onReceivedTouchIconUrl(String url, boolean precomposed) {
+            if(webViewListener!=null){
+                webViewListener.onReceivedTouchIconUrl(url,precomposed);
+            }
+        }
+
+        @Override
+        public void openFileInput(ValueCallback<Uri> fileUploadCallbackFirst, ValueCallback<Uri[]> fileUploadCallbackSecond, boolean allowMultiple) {
+            if(webViewListener!=null){
+                webViewListener.openFileInput(fileUploadCallbackFirst,fileUploadCallbackSecond,allowMultiple);
+            }
+        }
+
+        @Override
+        public void onDownloadStart(String url, String userAgent, String contentDisposition, String mimeType, long contentLength) {
+            if(webViewListener!=null){
+                webViewListener.onDownloadStart(url,userAgent,contentDisposition,mimeType,contentLength);
+            }
+        }
+    }
+    @SuppressLint("NewApi")
+    protected void openFileInput(final ValueCallback<Uri> fileUploadCallbackFirst, final ValueCallback<Uri[]> fileUploadCallbackSecond, final boolean allowMultiple) {
+        if (mFileUploadCallbackFirst != null) {
+            mFileUploadCallbackFirst.onReceiveValue(null);
+        }
+        mFileUploadCallbackFirst = fileUploadCallbackFirst;
+
+        if (mFileUploadCallbackSecond != null) {
+            mFileUploadCallbackSecond.onReceiveValue(null);
+        }
+        mFileUploadCallbackSecond = fileUploadCallbackSecond;
+
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+
+        if (allowMultiple) {
+            if (Build.VERSION.SDK_INT >= 18) {
+                i.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+            }
+        }
+
+        i.setType(mUploadableFileTypes);
+
+        if (mFragment != null && mFragment.get() != null && Build.VERSION.SDK_INT >= 11) {
+            mFragment.get().startActivityForResult(Intent.createChooser(i, Utils.getFileUploadPromptLabel()), mRequestCodeFilePicker);
+        }
+        else if (mActivity != null && mActivity.get() != null) {
+            mActivity.get().startActivityForResult(Intent.createChooser(i, Utils.getFileUploadPromptLabel()), mRequestCodeFilePicker);
+        }
+    }
+
 
     public static class Builder implements Serializable {
 
@@ -812,7 +1097,7 @@ public class AHWebView extends FrameLayout {
             return this;
         }
 
-        public Builder progressBarColor( int color) {
+        public Builder progressBarColor(int color) {
             this.progressBarColor = color;
             return this;
         }
@@ -1086,5 +1371,10 @@ public class AHWebView extends FrameLayout {
             this.url = url;
             return this;
         }
+
+        public void builder(AHWebView webView){
+            webView.initWebViewWithBuilder(this);
+        }
     }
+
 }

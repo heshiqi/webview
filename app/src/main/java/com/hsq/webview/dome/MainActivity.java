@@ -1,5 +1,6 @@
 package com.hsq.webview.dome;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -23,7 +24,12 @@ public class MainActivity extends AppCompatActivity {
         backBtn=findViewById(R.id.back);
         titleTv=(TextView)findViewById(R.id.title);
         webView = (AHWebView) findViewById(R.id.webView);
-        webView.initWebViewWithBuilder(new AHWebView.Builder().showProgressBar(true).progressBarHeight(3).setWebViewListener(new MyWebViewListener()).url("http://3g.163.com/touch/news/subchannel/all?nav=2&version=v_standard"));
+
+        new AHWebView.Builder().showProgressBar(true)
+                .progressBarHeight(3)
+                .setWebViewListener(new MyWebViewListener())
+                .url("http://3g.163.com/touch/news/subchannel/all?nav=2&version=v_standard")
+                .builder(webView);
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -33,12 +39,30 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+        webView.onActivityResult(requestCode, resultCode, intent);
+
+    }
+
+    @Override
     public void onBackPressed() {
-        if (webView.canGoBack()) {
-            webView.goBack();
+        if (!webView.onBackPressed()) {
             return;
         }
         super.onBackPressed();
+    }
+
+    @Override
+    protected void onResume() {
+        webView.onResume();
+        super.onResume();
+    }
+
+    @Override
+    protected void onPause() {
+        webView.onPause();
+        super.onPause();
     }
 
     @Override
