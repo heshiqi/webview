@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
         webView = (AHWebView) findViewById(R.id.webView);
 
         new AHWebView.Builder().showProgressBar(true)
-                .progressBarHeight(3)
+                .progressBarHeight(2)
                 .setWebViewListener(new MyWebViewListener())
                 .url("http://3g.163.com/touch/news/subchannel/all?nav=2&version=v_standard")
                 .builder(webView);
