@@ -42,8 +42,9 @@ import java.util.Map;
  */
 public class AHWebView extends FrameLayout {
 
-    protected static final int REQUEST_CODE_FILE_PICKER = 123456;//默认选择文件请求码
-    protected static final int MAX_PROGRESS = 100;//加载进度条最大值
+     static final int PROGRESSBAR_MIN_HEIGHT=2;//dp
+     static final int REQUEST_CODE_FILE_PICKER = 123456;//默认选择文件请求码
+     static final int MAX_PROGRESS = 100;//加载进度条最大值
     protected float density = 1;
 
     protected LinearLayout contentLayout;//webview的父布局
@@ -152,7 +153,7 @@ public class AHWebView extends FrameLayout {
             //添加加载进度条布局
             progressBar = new ProgressBar(context);
             progressBar.setMax(MAX_PROGRESS);
-            addView(progressBar, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 2));
+            addView(progressBar, getFrameLayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, PROGRESSBAR_MIN_HEIGHT));
         }
     }
 
