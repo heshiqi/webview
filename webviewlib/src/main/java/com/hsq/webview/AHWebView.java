@@ -234,7 +234,7 @@ public class AHWebView extends FrameLayout {
         webViewDefaultTextEncodingName = builder.webViewDefaultTextEncodingName;
         webViewUserAgentString = builder.webViewUserAgentString;
         webViewNeedInitialFocus = builder.webViewNeedInitialFocus;
-        webViewCacheMode = builder.webViewCacheMode;
+        webViewCacheMode = builder.webViewCacheMode!=null?builder.webViewCacheMode:WebSettings.LOAD_DEFAULT;
         webViewMixedContentMode = builder.webViewMixedContentMode;
         webViewOffscreenPreRaster = builder.webViewOffscreenPreRaster;
         thirdPartyCookiesEnabled = builder.thirdPartyCookiesEnabled != null ? builder.thirdPartyCookiesEnabled : true;

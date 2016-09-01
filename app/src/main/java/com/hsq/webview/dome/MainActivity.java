@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
         new AHWebView.Builder().showProgressBar(true)
                 .progressBarHeight(2)
                 .setWebViewListener(new MyWebViewListener())
-                .url("http://3g.163.com/touch/news/subchannel/all?nav=2&version=v_standard")
+                .url("http://mp.weixin.qq.com/s?__biz=MzIwMTAzMTMxMg==&mid=2649492289&idx=1&sn=1993befdd0f5b2f9a5f84dfe4024b568&scene=0#wechat_redirect")
                 .builder(webView);
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
