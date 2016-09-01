@@ -188,6 +188,7 @@ public class AHWebView extends FrameLayout {
         webViewListener = builder.listener;
         webViewClient = builder.webViewClient;
         webChromeClient = builder.webChromeClient;
+        javascriptInterface=builder.javascriptInterface;
 
         showProgressBar = builder.showProgressBar != null ? builder.showProgressBar : true;
         showErrorLayout = builder.showErrorLayout != null ? builder.showErrorLayout : false;
@@ -248,6 +249,7 @@ public class AHWebView extends FrameLayout {
     /**
      * 设置WebView的配置参数
      */
+    @SuppressLint("JavascriptInterface")
     private void initializeWebViewConfig() {
         webView.setWebChromeClient(new MyWebChromeClient(webChromeClient, this, customWebListener));
         webView.setWebViewClient(new MyWebViewClient(webViewClient, this, customWebListener));
@@ -255,6 +257,9 @@ public class AHWebView extends FrameLayout {
         webView.setFocusable(true);
         webView.setFocusableInTouchMode(true);
         webView.setSaveEnabled(true);
+        if(javascriptInterface!=null){
+            webView.addJavascriptInterface(javascriptInterface.object,javascriptInterface.name);
+        }
 
         WebSettings settings = webView.getSettings();
 
@@ -457,6 +462,11 @@ public class AHWebView extends FrameLayout {
         }
 
         webView.loadUrl(url, additionalHttpHeaders);
+    }
+
+    @SuppressLint("JavascriptInterface")
+    public void addJavascriptInterface(Object object,String name){
+        webView.addJavascriptInterface(object,name);
     }
 
     @SuppressLint("NewApi")
@@ -720,6 +730,7 @@ public class AHWebView extends FrameLayout {
     protected WebViewClient webViewClient;
     protected WebChromeClient webChromeClient;
     protected WebViewListener webViewListener;
+    protected JavascriptInterface javascriptInterface;
     protected Boolean showProgressBar;
     protected Boolean showErrorLayout;
     protected Integer progressBarColor;
@@ -898,11 +909,23 @@ public class AHWebView extends FrameLayout {
     }
 
 
+    public static class JavascriptInterface{
+        private Object object;
+        private String name;
+
+        public JavascriptInterface(Object o,String name){
+            this.object=o;
+            this.name=name;
+        }
+
+    }
+
     public static class Builder implements Serializable {
 
         protected transient WebViewListener listener;
         protected transient WebViewClient webViewClient;
         protected transient WebChromeClient webChromeClient;
+        protected transient JavascriptInterface javascriptInterface;
 
         /**
          * 是否显示加载进度条
@@ -1156,6 +1179,11 @@ public class AHWebView extends FrameLayout {
 
         public Builder setWebViewListener(WebViewListener listener) {
             this.listener = listener;
+            return this;
+        }
+
+        public Builder addJavascriptInterface(JavascriptInterface javascriptInterface){
+            this.javascriptInterface=javascriptInterface;
             return this;
         }
 
