@@ -29,8 +29,8 @@ public class MainActivity extends AppCompatActivity {
         new AHWebView.Builder().showProgressBar(true)
                 .progressBarHeight(2)
                 .setWebViewListener(new MyWebViewListener())
-//                .url("http://forum.app.autohome.com.cn/forum_v7.0.0/forum/club/topiccontent-a2-pm2-v7.0.5-t53449079-o0-p1-s20-c1-nt0-fs0-sp0-al0-cw360.json")
-                .url("file:///android_asset/www/index.html")
+                .url("https://www.zhihu.com/question/30445201")
+//                .url("file:///android_asset/www/index.html")
                 .builder(webView);
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
