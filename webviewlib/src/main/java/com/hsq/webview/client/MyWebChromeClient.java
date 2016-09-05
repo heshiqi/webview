@@ -58,21 +58,17 @@ public class MyWebChromeClient extends WebChromeClient {
     @SuppressWarnings("all")
     public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
 
-        boolean result=false;
         if(webChromeClient!=null){
-            result= webChromeClient.onShowFileChooser(webView,filePathCallback,fileChooserParams);
+            webChromeClient.onShowFileChooser(webView,filePathCallback,fileChooserParams);
         }
-        if (Build.VERSION.SDK_INT >= 21) {
-            final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
+//        if (Build.VERSION.SDK_INT >= 21) {
             if(listener!=null){
+                final boolean allowMultiple = fileChooserParams.getMode() == FileChooserParams.MODE_OPEN_MULTIPLE;
                 listener.openFileInput(null, filePathCallback, allowMultiple);
             }
 
             return true;
-        }
-        else {
-            return result;
-        }
+//        }
 
     }
 
@@ -162,6 +158,15 @@ public class MyWebChromeClient extends WebChromeClient {
         }
     }
 
+    /**
+     * window.alert
+     *
+     * @param view
+     * @param url
+     * @param message
+     * @param result
+     * @return
+     */
     @Override
     public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
         if (webChromeClient != null) {
@@ -173,6 +178,14 @@ public class MyWebChromeClient extends WebChromeClient {
     }
 
 
+    /**
+     * window.confirm
+     * @param view
+     * @param url
+     * @param message
+     * @param result
+     * @return
+     */
     @Override
     public boolean onJsConfirm(WebView view, String url, String message, JsResult result) {
         if (webChromeClient != null) {
@@ -183,18 +196,32 @@ public class MyWebChromeClient extends WebChromeClient {
         }
     }
 
+    /**
+     *window.prompt
+     * @param view
+     * @param url
+     * @param message
+     * @param defaultValue
+     * @param result
+     * @return
+     */
     @Override
     public boolean onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
+
+        if (listener != null) {
+            listener.onJsPrompt(view, url,message,defaultValue,result);
+        }
         if (webChromeClient != null) {
             return webChromeClient.onJsPrompt(view, url, message, defaultValue, result);
         }
-        else {
-            return super.onJsPrompt(view, url, message, defaultValue, result);
-        }
+//        result.confirm("123");
+        return true;
+
     }
 
     @Override
     public boolean onJsBeforeUnload(WebView view, String url, String message, JsResult result) {
+
         if (webChromeClient != null) {
             return webChromeClient.onJsBeforeUnload(view, url, message, result);
         }
@@ -231,6 +258,7 @@ public class MyWebChromeClient extends WebChromeClient {
     @SuppressLint("NewApi")
     @SuppressWarnings("all")
     public void onPermissionRequest(PermissionRequest request) {
+        request.grant(request.getResources());
         if (Build.VERSION.SDK_INT >= 21) {
             if (webChromeClient != null) {
                 webChromeClient.onPermissionRequest(request);
@@ -276,6 +304,7 @@ public class MyWebChromeClient extends WebChromeClient {
 
     @Override
     public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+
         if (webChromeClient != null) {
             return webChromeClient.onConsoleMessage(consoleMessage);
         }

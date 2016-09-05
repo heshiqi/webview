@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.TextView;
 
 import com.hsq.webview.AHWebView;
+import com.hsq.webview.jsinteractor.DefaultInterpreter;
 import com.hsq.webview.listener.WebViewListener;
 
 
@@ -28,7 +29,8 @@ public class MainActivity extends AppCompatActivity {
         new AHWebView.Builder().showProgressBar(true)
                 .progressBarHeight(2)
                 .setWebViewListener(new MyWebViewListener())
-                .url("http://mp.weixin.qq.com/s?__biz=MzIwMTAzMTMxMg==&mid=2649492289&idx=1&sn=1993befdd0f5b2f9a5f84dfe4024b568&scene=0#wechat_redirect")
+//                .url("http://forum.app.autohome.com.cn/forum_v7.0.0/forum/club/topiccontent-a2-pm2-v7.0.5-t53449079-o0-p1-s20-c1-nt0-fs0-sp0-al0-cw360.json")
+                .url("file:///android_asset/www/index.html")
                 .builder(webView);
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -36,6 +38,10 @@ public class MainActivity extends AppCompatActivity {
                onBackPressed();
             }
         });
+        webView.attachActivity(this);
+        webView.setInterpreter(new DefaultInterpreter());
+        webView.addJavascriptInterface(new ToastFunction(),"showToast");
+        webView.addJavascriptInterface(new AsyncFunction(webView),"async");
     }
 
     @Override
