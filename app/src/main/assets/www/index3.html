@@ -1,0 +1,112 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>JsInteractor</title>
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1, user-scalable=no"/>
+    <script src="file:///android_asset/JsInteractor.js" type="text/javascript"></script>
+    <script type="text/javascript">
+     function callback(result)
+      {
+          alert(result);
+      }
+
+        function othercall(result)
+      {
+           alert(result);
+      }
+
+    </script>
+    <style>
+
+    </style>
+</head>
+
+<body>
+<div>
+    <h3>JsInteractor 测试</h3>
+</div>
+<ul class="list">
+    <li>
+        <!--
+        <div>
+            <button onclick="JsInteractor.call('showToast',{'name':'同步方法','msg':'我调用了一个同步方法','value':1})">
+                测试showToast,同步返回值
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('async',{'name':'异步方法','msg':'我调用了一个异步方法','value':2},['callback','othercall'])">
+                测试showToast,异步执行完成后通知js
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('browser',{'url':'http://chezhu.autohome.com.cn/v1.0/index1.html'},['callback','othercall'])">
+                打开原生界面跳转
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('callphone',{'tel':'15652206606'},['callback','othercall'])">
+                拨打电话
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('login',{},['callback','othercall'])">
+                打开登录界面
+            </button>
+        </div>
+        <div>
+            <button onclick="JsInteractor.callasync('receiverlogin',{'uc_token':'jdskldjflkjdoiewoiio'},['callback','othercall'])">
+                H5界面登录成功 通知客户端
+            </button>
+        </div>
+        <div>
+            <button onclick="JsInteractor.callasync('receiverloginout',{'uc_token':'jdskldjflkjdoiewoiio'},['callback','othercall'])">
+                H5界面退出成功 通知客户端
+            </button>
+        </div>
+        <div>
+            <button onclick="JsInteractor.callasync('uploadimage',{'index':0,'url':'http://www.....'},['callback','othercall'])">
+                上传照片
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('share',{'platform':'weixin&weixincircle&weibo','url':'http://sjk_cccxx_ccc','title':'四六级考的浪费了','content':'飙血 对深刻理解','imgurl':'http://chezhu2.autoimg.cn/g17/M10/EE/C0/wKjBxleplvSATWVxAAD2Iv7lUw4298_w800_h592.jpg'},['callback','othercall'])">
+                分享
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('opennative',{'url':'autohome://seriessummary?seriesid=66'},['callback','othercall'])">
+                打开原生界面
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('setshareinfo',{'platform':'weixin&weixincircle&weibo','url':'http://sjk_cccxx_ccc','title':'四六级考的浪费了','content':'飙血 对深刻理解','imgurl':'http://chezhu2.autoimg.cn/g17/M10/EE/C0/wKjBxleplvSATWVxAAD2Iv7lUw4298_w800_h592.jpg'},['callback','othercall'])">
+                设置分享信息
+            </button>
+        </div>
+
+        <div>
+            <button onclick="JsInteractor.callasync('choosecity',{},['callback','othercall'])">
+                选择城市
+            </button>
+        </div>
+        -->
+        <div>
+            <button onclick="JsInteractor.callasync('bowserimage',{'currenturl':'http://chezhu2.autoimg.cn/g17/M13/F0/14/wKgH2FeplvqABqY_AAEvKiSPngs194_w800_h600.jpg','imageurls':'http://chezhu2.autoimg.cn/g17/M10/EE/C0/wKjBxleplvSATWVxAAD2Iv7lUw4298_w800_h592.jpg,http://chezhu2.autoimg.cn/g17/M09/F0/12/wKgH2FeplvWAb2R9AABpUx5nXzA582_w700_h394.jpg,http://chezhu2.autoimg.cn/g12/M14/F3/42/wKgH01eplvWAd0kbAAD_wKi8fxM361_w700_h525.jpg,http://chezhu2.autoimg.cn/g17/M0C/F0/13/wKgH2FeplvaADxD_AAElNZEdCyM897_w800_h592.jpg,http://chezhu2.autoimg.cn/g17/M0E/F0/13/wKgH2FeplviAQ2xJAAN1X_Wvf9w711_w1080_h1080.jpg,http://chezhu2.autoimg.cn/g17/M10/F0/2C/wKgH51eplvmAcfwsAAEF_-M2DdU900_w800_h600.jpg,http://chezhu2.autoimg.cn/g17/M14/F0/2C/wKgH51eplvqAaZpRAAEu7MEHGp8730_w800_h592.jpg,http://chezhu2.autoimg.cn/g17/M13/F0/14/wKgH2FeplvqABqY_AAEvKiSPngs194_w800_h600.jpg,http://chezhu2.autoimg.cn/g17/M15/F0/2C/wKgH51eplvuALkhHAAD8LNTKcXI355_w800_h600.jpg'},['callback','othercall'])">
+                浏览图片
+            </button>
+        </div>
+
+    </li>
+    <br/>
+</ul>
+</body>
+</html>

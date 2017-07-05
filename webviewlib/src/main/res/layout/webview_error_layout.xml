@@ -10,14 +10,14 @@
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_centerInParent="true"
-        android:indeterminateDrawable="@drawable/error_layout_progress_drawable"
+        android:indeterminateDrawable="@drawable/webview_error_layout_progress_drawable"
         android:indeterminateDuration="800"
         android:interpolator="@android:anim/accelerate_decelerate_interpolator"/>
 
     <TextView android:id="@+id/empty_message_tv"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/empty_message"
+        android:text="@string/webview_empty_message"
         android:layout_centerInParent="true"
         android:visibility="gone"/>
 
@@ -32,21 +32,21 @@
         <ImageView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/icon_failed_to_load"/>
+            android:src="@drawable/webview_icon_failed_to_load"/>
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/error_message"
+            android:text="@string/webview_error_message"
             android:textSize="16sp"
             android:layout_marginTop="10dp"/>
 
         <Button android:id="@+id/reload_btn"
             android:layout_width="150dp"
             android:layout_height="40dp"
-            android:text="@string/reload"
-            android:background="@drawable/reload_btn_selector"
-            android:textColor="@color/reload_btn_text_color"
+            android:text="@string/webview_reload"
+            android:background="@drawable/webview_reload_btn_selector"
+            android:textColor="@color/webview_reload_btn_text_color"
             android:layout_marginTop="40dp"/>
 
     </LinearLayout>
@@ -63,7 +63,7 @@
             android:layout_width="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_height="wrap_content"
-            android:src="@drawable/guide_arrows"
+            android:src="@drawable/webview_guide_arrows"
             android:layout_marginRight="45dp"
             android:layout_marginBottom="100dp"/>
 

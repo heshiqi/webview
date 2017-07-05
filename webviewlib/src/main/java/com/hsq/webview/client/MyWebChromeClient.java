@@ -19,7 +19,6 @@ import android.webkit.WebView;
 import com.hsq.webview.AHWebView;
 import com.hsq.webview.listener.WebViewListener;
 
-
 /**
  * Created by heshiqi on 16/8/30.
  */
@@ -56,7 +55,7 @@ public class MyWebChromeClient extends WebChromeClient {
     }
 
     @SuppressWarnings("all")
-    public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
+    public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
 
         if(webChromeClient!=null){
             webChromeClient.onShowFileChooser(webView,filePathCallback,fileChooserParams);

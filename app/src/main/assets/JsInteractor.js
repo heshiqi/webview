@@ -1,7 +1,7 @@
 (function (win) {
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     var JsInteractor = win.JsInteractor || (win.JsInteractor = {});
-    var JsInteractor_PROTOCOL = 'actionfrom㊣';
+    var JsInteractor_PROTOCOL = 'action㊣';
     var Inner = {
         call: function (method, params, callback) {
             console.log(method+" "+params+" "+callback);
@@ -15,7 +15,7 @@
 
          callasync: function (method, params, callback) {
                     console.log(method+" "+params+" "+callback);
-                     var message=Util.getMessage(method,params,callback)
+                     var message=Util.getMessage(method,params,callback);
                       console.log(message);
                       window.prompt(message, "");
 
@@ -34,7 +34,7 @@
         getJson:function(method,param,call){
             var msg = new Object();
             msg.action = method;
-            msg.params = param;
+            msg.param = param;
             msg.callback=call;
             return JSON.stringify(msg);
         }

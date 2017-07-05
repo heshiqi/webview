@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="reload_btn_text_color">#ffffff</color>
-    <color name="reload_btn_color">#2f91fc</color>
-    <color name="reload_btn_color_press">#0079ec</color>
+    <color name="webview_reload_btn_text_color">#ffffff</color>
+    <color name="webview_reload_btn_color">#2f91fc</color>
+    <color name="webview_reload_btn_color_press">#0079ec</color>
 </resources>

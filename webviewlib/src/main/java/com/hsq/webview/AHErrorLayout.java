@@ -48,7 +48,7 @@ public class AHErrorLayout extends LinearLayout {
 	}
 
 	private void init() {
-		View view = View.inflate(context, R.layout.error_layout, null);
+		View view = View.inflate(context, R.layout.webview_error_layout, null);
 		mRootView = view;
 		mLoadFailLayout = (LinearLayout) view.findViewById(R.id.load_fail_layout);
 		mNoDatalayout=(RelativeLayout)view.findViewById(R.id.load_no_data_layout);

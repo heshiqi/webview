@@ -5,13 +5,16 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.hsq.webview.AHWebView;
 import com.hsq.webview.jsinteractor.DefaultInterpreter;
 import com.hsq.webview.listener.WebViewListener;
 
+import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+
+public class MainActivity extends AppCompatActivity implements BowserImageFunc.BowserImageListener {
 
     private View backBtn;
     private TextView titleTv;
@@ -29,8 +32,8 @@ public class MainActivity extends AppCompatActivity {
         new AHWebView.Builder().showProgressBar(true)
                 .progressBarHeight(2)
                 .setWebViewListener(new MyWebViewListener())
-                .url("https://www.zhihu.com/question/30445201")
-//                .url("file:///android_asset/www/index.html")
+//                .url("https://www.zhihu.com/question/30445201")
+                .url("file:///android_asset/www/index3.html")
                 .builder(webView);
         backBtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -40,8 +43,8 @@ public class MainActivity extends AppCompatActivity {
         });
         webView.attachActivity(this);
         webView.setInterpreter(new DefaultInterpreter());
-        webView.addJavascriptInterface(new ToastFunction(),"showToast");
-        webView.addJavascriptInterface(new AsyncFunction(webView),"async");
+
+        webView.addJavascriptFunction(new BowserImageFunc(webView,this), "bowserimage");
     }
 
     @Override
@@ -75,6 +78,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         webView.onDestroy();
         super.onDestroy();
+    }
+
+    @Override
+    public void bowserImage(int index, String currentUrl, List<String> images) {
+        Toast.makeText(this,"打开大图",Toast.LENGTH_LONG).show();
     }
 
     private class MyWebViewListener extends WebViewListener {

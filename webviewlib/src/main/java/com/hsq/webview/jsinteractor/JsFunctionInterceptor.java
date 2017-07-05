@@ -1,10 +1,6 @@
 package com.hsq.webview.jsinteractor;
 
-
-import com.hsq.webview.functions.Action;
-import com.hsq.webview.functions.Action1;
-import com.hsq.webview.functions.Func1;
-import com.hsq.webview.functions.Function;
+import com.hsq.webview.functions.Func;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -17,35 +13,38 @@ public class JsFunctionInterceptor {
     /**
      * 保存webview 中注册的回调
      */
-    private Map<String, Function> functions= new HashMap<String, Function>();
+    private Map<String, Func> functions = new HashMap<String, Func>();
 
-    public void addJavascriptFunction(String name, Function function){
-           functions.put(name,function);
+    public void addJavascriptFunction(String name, Func function) {
+        functions.put(name, function);
     }
 
     /**
-     *
      * @param messageString js 发过来的消息
-     * @param interpreter  解析消息类
+     * @param interpreter   解析消息类
      * @return
      */
-    public String jsCallJava( String messageString,Interpreter interpreter){
+    public String jsCallJava(String messageString, Interpreter interpreter) {
 
-        String result="";
-        JsMessage message=interpreter.parser(messageString);
 
+        JsMessage message = interpreter.parser(messageString);
+        if (message == null) {
+            return null;
+        }
+        String result = "";
         if (functions.containsKey(message.getMethodName())) {
-            Function function=functions.get(message.getMethodName());
-            if(function instanceof Action){
-                  Action1 action1= (Action1) function;
-                   action1.call(message);
-
-            }else if(function instanceof Function){
-                Func1<JsMessage,String> func1=(Func1)function;
-                result= func1.call(message);
-            }
+            Func func = functions.get(message.getMethodName());
+            result = (String) func.call(message);
 
         }
         return result;
+    }
+
+    public Func getFunc(String funcName) {
+        return functions.get(funcName);
+    }
+
+    public void clear() {
+        functions.clear();
     }
 }

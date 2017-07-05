@@ -12,8 +12,8 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Message;
-import android.support.v4.app.Fragment;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
@@ -30,7 +30,8 @@ import android.widget.LinearLayout;
 
 import com.hsq.webview.client.MyWebChromeClient;
 import com.hsq.webview.client.MyWebViewClient;
-import com.hsq.webview.functions.Function;
+import com.hsq.webview.functions.Func;
+import com.hsq.webview.jsinteractor.DefaultInterpreter;
 import com.hsq.webview.jsinteractor.Interpreter;
 import com.hsq.webview.jsinteractor.JsFunctionInterceptor;
 import com.hsq.webview.listener.WebViewListener;
@@ -51,7 +52,6 @@ public class AHWebView extends FrameLayout {
     protected float density = 1;
 
 
-
     protected JsFunctionInterceptor functionInterceptor;
     protected Interpreter interpreter;//解析js发过来的消息
     protected LinearLayout contentLayout;//webview的父布局
@@ -66,7 +66,6 @@ public class AHWebView extends FrameLayout {
 
     protected CustomWebListener customWebListener;//监听webview的加载状态回调
     protected WeakReference<Activity> mActivity;
-    protected WeakReference<Fragment> mFragment;
     protected ValueCallback<Uri> mFileUploadCallbackFirst;//Android 5.0之前的文件上传回调
     protected ValueCallback<Uri[]> mFileUploadCallbackSecond;//Android 5.0之后的文件上传回调
     protected final Map<String, String> mHttpHeaders = new HashMap<String, String>();//加载url时 添加的请求头
@@ -105,15 +104,6 @@ public class AHWebView extends FrameLayout {
     }
 
     /**
-     * 设置fragment的引用
-     *
-     * @param fragment
-     */
-    public void attachFragment(Fragment fragment) {
-        mFragment = new WeakReference<Fragment>(fragment);
-    }
-
-    /**
      * 初始化布局
      *
      * @param context
@@ -121,7 +111,7 @@ public class AHWebView extends FrameLayout {
      */
     private void initView(Context context, AttributeSet attrs) {
 
-        functionInterceptor=new JsFunctionInterceptor();
+        functionInterceptor = new JsFunctionInterceptor();
         customWebListener = new CustomWebListener();
         density = context.getResources().getDisplayMetrics().density;
 
@@ -202,7 +192,7 @@ public class AHWebView extends FrameLayout {
         webViewListener = builder.listener;
         webViewClient = builder.webViewClient;
         webChromeClient = builder.webChromeClient;
-        javascriptInterface=builder.javascriptInterface;
+        javascriptInterface = builder.javascriptInterface;
 
         showProgressBar = builder.showProgressBar != null ? builder.showProgressBar : true;
         showErrorLayout = builder.showErrorLayout != null ? builder.showErrorLayout : false;
@@ -218,7 +208,7 @@ public class AHWebView extends FrameLayout {
         webViewLoadWithOverviewMode = builder.webViewLoadWithOverviewMode != null ? builder.webViewLoadWithOverviewMode : true;
         webViewSaveFormData = builder.webViewSaveFormData;
         webViewTextZoom = builder.webViewTextZoom;
-        webViewUseWideViewPort = builder.webViewUseWideViewPort!=null?builder.webViewUseWideViewPort:true;
+        webViewUseWideViewPort = builder.webViewUseWideViewPort != null ? builder.webViewUseWideViewPort : true;
         webViewSupportMultipleWindows = builder.webViewSupportMultipleWindows;
         webViewLayoutAlgorithm = builder.webViewLayoutAlgorithm;
         webViewStandardFontFamily = builder.webViewStandardFontFamily;
@@ -240,7 +230,7 @@ public class AHWebView extends FrameLayout {
         webViewGeolocationDatabasePath = builder.webViewGeolocationDatabasePath;
         webViewAppCacheEnabled = builder.webViewAppCacheEnabled != null ? builder.webViewAppCacheEnabled : true;
         webViewAppCachePath = builder.webViewAppCachePath;
-        webViewDatabaseEnabled = builder.webViewDatabaseEnabled!=null?builder.webViewDatabaseEnabled:true;
+        webViewDatabaseEnabled = builder.webViewDatabaseEnabled != null ? builder.webViewDatabaseEnabled : true;
         webViewDomStorageEnabled = builder.webViewDomStorageEnabled != null ? builder.webViewDomStorageEnabled : true;
         webViewGeolocationEnabled = builder.webViewGeolocationEnabled;
         webViewJavaScriptCanOpenWindowsAutomatically = builder.webViewJavaScriptCanOpenWindowsAutomatically;
@@ -277,8 +267,8 @@ public class AHWebView extends FrameLayout {
         webView.setDrawingCacheEnabled(true);
 
 
-        if(javascriptInterface!=null){
-            webView.addJavascriptInterface(javascriptInterface.object,javascriptInterface.name);
+        if (javascriptInterface != null) {
+            webView.addJavascriptInterface(javascriptInterface.object, javascriptInterface.name);
         }
 
         WebSettings settings = webView.getSettings();
@@ -440,7 +430,7 @@ public class AHWebView extends FrameLayout {
             progressBar.setReachedBarHeight(progressBarHeight);
             progressBar.setUnreachedBarColor(Color.TRANSPARENT);
 //            progressBar.getProgressDrawable().setColorFilter(progressBarColor, PorterDuff.Mode.SRC_IN);
-            progressBar.getLayoutParams().height=progressBarHeight;
+            progressBar.getLayoutParams().height = progressBarHeight;
             progressBar.setVisibility(VISIBLE);
         } else {
             progressBar.setVisibility(INVISIBLE);
@@ -455,6 +445,7 @@ public class AHWebView extends FrameLayout {
 
     /**
      * 设置解析消息的 解析器
+     *
      * @param interpreter
      */
     public void setInterpreter(Interpreter interpreter) {
@@ -492,9 +483,8 @@ public class AHWebView extends FrameLayout {
         webView.loadUrl(url, additionalHttpHeaders);
     }
 
-    public void addJavascriptInterface(Function function, String name){
-//        webView.addJavascriptInterface(object,name);
-        functionInterceptor.addJavascriptFunction(name,function);
+    public void addJavascriptFunction(Func function, String name) {
+        functionInterceptor.addJavascriptFunction(name, function);
     }
 
     @SuppressLint("NewApi")
@@ -515,12 +505,41 @@ public class AHWebView extends FrameLayout {
         }
     }
 
-   public void clearCache(boolean clearCache){
-       webView.clearCache(clearCache);
-   }
+    /**
+     * 选择指定的js方法进行回调
+     *
+     * @param fuckName
+     * @param jsParam
+     */
+    public void executeResultFuckJs(String fuckName, String jsParam) {
+        Func func = functionInterceptor.getFunc(fuckName);
+        if (func != null) {
+            func.result(jsParam);
+        }
+
+    }
+
+    /**
+     * 选择指定的js方法进行回调
+     *
+     * @param fuckName
+     * @param jsParam
+     */
+    public void executeResultFuckJs(String fuckName, String callbackName, String jsParam) {
+        Func func = functionInterceptor.getFunc(fuckName);
+        if (func != null) {
+            func.result(callbackName, jsParam);
+        }
+
+    }
+
+    public void clearCache(boolean clearCache) {
+        webView.clearCache(clearCache);
+    }
 
     /**
      * 设置上传文件的类型
+     *
      * @param mimeType
      */
     public void setUploadableFileTypes(final String mimeType) {
@@ -529,6 +548,7 @@ public class AHWebView extends FrameLayout {
 
     /**
      * 选取文件返回处理
+     *
      * @param requestCode
      * @param resultCode
      * @param intent
@@ -580,6 +600,7 @@ public class AHWebView extends FrameLayout {
 
     /**
      * 回退键处理
+     *
      * @return
      */
     public boolean onBackPressed() {
@@ -730,9 +751,9 @@ public class AHWebView extends FrameLayout {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
             webView.onPause();
         }
+        functionInterceptor.clear();
         destroyWebView();
-        mActivity=null;
-        mFragment=null;
+        mActivity = null;
     }
 
     private void destroyWebView() {
@@ -843,27 +864,42 @@ public class AHWebView extends FrameLayout {
         loadUrl(url, additionalHttpHeaders);
     }
 
-    private int oldProgress=0;
-    private void setProgress(int newProgress){
-        ValueAnimator animator = ValueAnimator.ofInt(oldProgress, newProgress);
-        animator.setTarget(progressBar);
-        animator.setDuration(200).start();
-        animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator animation) {
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-                    int value = (int) animation.getAnimatedValue();
-                    if(value > progressBar.getProgress()) {
-                        progressBar.setProgress(value);
-                    }
+    private int oldProgress = 0;
 
-                    if (value == MAX_PROGRESS) {
-                        progressBar.setProgress(0);
+    private void setProgress(int newProgress) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+            ValueAnimator animator = ValueAnimator.ofInt(oldProgress, newProgress);
+            animator.setTarget(progressBar);
+            animator.setDuration(200).start();
+            animator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+                        int value = (int) animation.getAnimatedValue();
+                        if (value > progressBar.getProgress()) {
+                            progressBar.setProgress(value);
+                        }
+
+                        if (value == MAX_PROGRESS) {
+                            progressBar.setProgress(0);
+                        }
                     }
                 }
+            });
+            oldProgress = newProgress;
+        } else {
+            progressBar.setProgress(newProgress);
+            if (newProgress == MAX_PROGRESS) {
+                progressBar.setProgress(0);
             }
-        });
-        oldProgress = newProgress;
+        }
+    }
+
+    public void testFucktion(String message) {
+        if (interpreter == null) {
+            interpreter = new DefaultInterpreter();
+        }
+        functionInterceptor.jsCallJava(message, interpreter);
     }
 
 
@@ -871,7 +907,7 @@ public class AHWebView extends FrameLayout {
         @Override
         public void onProgressChanged(int progress) {
             if (progressBar != null && showProgressBar) {
-                 setProgress(progress);
+                setProgress(progress);
 
             }
             if (webViewListener != null) {
@@ -881,12 +917,13 @@ public class AHWebView extends FrameLayout {
 
         @Override
         public void onJsPrompt(WebView view, String url, String message, String defaultValue, JsPromptResult result) {
-            if(interpreter==null){
-                throw new NullPointerException("interpreter is null,Please call setInterpreter()");
+            Log.d("hh", "Js:" + message);
+            if (interpreter == null) {
+                interpreter = new DefaultInterpreter();
             }
-            result.confirm(functionInterceptor.jsCallJava( message,interpreter));
+            result.confirm(functionInterceptor.jsCallJava(message, interpreter));
             if (webViewListener != null) {
-                webViewListener.onJsPrompt( view,  url,  message,  defaultValue,  result);
+                webViewListener.onJsPrompt(view, url, message, defaultValue, result);
             }
         }
 
@@ -920,10 +957,14 @@ public class AHWebView extends FrameLayout {
             if (hasError) {
                 errorLayout.setErrorType(AHErrorLayout.TYPE_NETWORK_ERROR);
 
-            }else{
+            } else {
                 errorLayout.setErrorType(AHErrorLayout.TYPE_HIDE);
             }
 //            progressBar.setVisibility(View.INVISIBLE);
+
+            if (webViewListener != null) {
+                webViewListener.onPageFinished(url, hasError);
+            }
         }
 
         @Override
@@ -965,23 +1006,21 @@ public class AHWebView extends FrameLayout {
 
         i.setType(mUploadableFileTypes);
 
-        if (mFragment != null && mFragment.get() != null && Build.VERSION.SDK_INT >= 11) {
-            mFragment.get().startActivityForResult(Intent.createChooser(i, Utils.getFileUploadPromptLabel()), mRequestCodeFilePicker);
-        } else if (mActivity != null && mActivity.get() != null) {
+        if (mActivity != null && mActivity.get() != null) {
             mActivity.get().startActivityForResult(Intent.createChooser(i, Utils.getFileUploadPromptLabel()), mRequestCodeFilePicker);
-        }else{
+        } else {
             throw new NullPointerException("mActivity or mFragment is null,please call attachActivity(Activity | Fragment)");
         }
     }
 
 
-    public static class JavascriptInterface{
+    public static class JavascriptInterface {
         private Object object;
         private String name;
 
-        public JavascriptInterface(Object o,String name){
-            this.object=o;
-            this.name=name;
+        public JavascriptInterface(Object o, String name) {
+            this.object = o;
+            this.name = name;
         }
 
     }
@@ -1248,8 +1287,8 @@ public class AHWebView extends FrameLayout {
             return this;
         }
 
-        public Builder addJavascriptInterface(JavascriptInterface javascriptInterface){
-            this.javascriptInterface=javascriptInterface;
+        public Builder addJavascriptInterface(JavascriptInterface javascriptInterface) {
+            this.javascriptInterface = javascriptInterface;
             return this;
         }
 

@@ -8,6 +8,10 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 /**
  * Created by heshiqi on 16/9/5.
  */
@@ -16,7 +20,7 @@ public class DefaultInterpreter implements Interpreter {
     /**
      * 解析js回调本地方法的消息
      *
-     * @param messageString  actionfrom㊣{action:'methodName',params:["1","2","3"],callback:'call'}
+     * @param messageString  action㊣{"action":"toast","param":{"name":"1","key":"2","val":"3"},"callback":"[call,other]"}
      * @return
      */
     @Override
@@ -32,8 +36,8 @@ public class DefaultInterpreter implements Interpreter {
         try {
             JSONObject message = new JSONObject(msgBody);
             String action = message.optString(Constant.ACTION);//调用的方法名
-            String[] params = getParams(message.optJSONArray(Constant.PARAMS));
-            String callback=message.optString(Constant.CALLBACK);
+            Map<String,Object> params = getParams(message.optJSONObject(Constant.PARAMS));
+            String[] callback=getCallbacks(message.optJSONArray(Constant.CALLBACK));
             JsMessage message1=new JsMessage(action,params,callback);
             return message1;
         } catch (JSONException e) {
@@ -42,13 +46,31 @@ public class DefaultInterpreter implements Interpreter {
          return null;
     }
 
-    private String[] getParams(JSONArray jsonArray) {
-        int size = jsonArray.length();
-        String[] params = new String[size];
-        for (int i = 0; i < size; i++) {
-            params[i] = jsonArray.optString(i);
+    private Map<String,Object> getParams(JSONObject json) {
+        Map<String, Object> params = new HashMap<String, Object>();
+        Iterator<String> iter = json.keys();
+        String key=null;
+        Object value=null;
+        while (iter.hasNext()) {
+            key=iter.next();
+            value=json.opt(key);
+            params.put(key, value);
         }
-
         return params;
     }
+
+
+       private String[] getCallbacks(JSONArray jsonArray) {
+           if(jsonArray==null){
+               return null;
+           }
+           int size = jsonArray.length();
+           String[] callbacks = new String[size];
+           for (int i = 0; i < size; i++) {
+               callbacks[i] = jsonArray.optString(i);
+
+           }
+           return callbacks;
+
+       }
 }

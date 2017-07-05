@@ -8,7 +8,7 @@ public class Constant {
     /**
      * js交互协议头
      */
-    public static final String JS_PROTOCOL="actionfrom㊣";
+    public static final String JS_PROTOCOL="action㊣";
 
     /**
      * js消息中标识调用方法名的key
@@ -18,7 +18,7 @@ public class Constant {
     /**
      * js消息中标识调用方法中需传入参数的key
      */
-    public static final String PARAMS="params";
+    public static final String PARAMS="param";
 
     /**
      * js消息中标识调用方法完成后需要webview回调的js方法名
